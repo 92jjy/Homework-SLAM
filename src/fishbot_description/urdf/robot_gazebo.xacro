@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<robot name="robot_with_gazebo" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ========== 材质定义 ========== -->
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+  <material name="gray">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0 0 0 1"/>
+  </material>
+
+  <!-- ========== 机器人参数 ========== -->
+  <xacro:property name="robot_prefix" value="rb1"/>
+  <xacro:property name="robot_color" value="blue"/>
+  <xacro:property name="base_radius" value="0.3"/>
+  <xacro:property name="base_height" value="0.15"/>
+  <xacro:property name="body_radius" value="0.25"/>
+  <xacro:property name="body_height" value="0.25"/>
+  <xacro:property name="arm_length" value="0.2"/>
+  <xacro:property name="arm_radius" value="0.04"/>
+  <xacro:property name="head_radius" value="0.1"/>
+
+  <!-- ========== 虚拟根链接 ========== -->
+  <link name="world_link"/>
+
+  <!-- ========================================================= -->
+  <!-- ========== 1. 基座 ========== -->
+  <!-- ========================================================= -->
+  <link name="${robot_prefix}_base_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="${robot_color}"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="1.5"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <!-- Gazebo 标签：基座的物理属性 -->
+  <gazebo reference="${robot_prefix}_base_link">
+    <material>Gazebo/Blue</material>
+    <mu1>0.8</mu1>      <!-- 摩擦系数 -->
+    <mu2>0.8</mu2>
+    <kp>1000000.0</kp>  <!-- 接触刚度 -->
+    <kd>100.0</kd>      <!-- 接触阻尼 -->
+  </gazebo>
+
+  <joint name="${robot_prefix}_joint_world" type="fixed">
+    <parent link="world_link"/>
+    <child link="${robot_prefix}_base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- ========== 2. 身体 ========== -->
+  <!-- ========================================================= -->
+  <link name="${robot_prefix}_body_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${body_radius}" length="${body_height}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="${robot_color}"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${body_radius}" length="${body_height}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.008" ixy="0" ixz="0" iyy="0.008" iyz="0" izz="0.008"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="${robot_prefix}_body_link">
+    <material>Gazebo/Blue</material>
+    <mu1>0.5</mu1>
+    <mu2>0.5</mu2>
+  </gazebo>
+
+  <joint name="${robot_prefix}_joint_body" type="fixed">
+    <parent link="${robot_prefix}_base_link"/>
+    <child link="${robot_prefix}_body_link"/>
+    <origin xyz="0 0 ${base_height/2 + body_height/2}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- ========== 3. 头部 ========== -->
+  <!-- ========================================================= -->
+  <link name="${robot_prefix}_head_link">
+    <visual>
+      <geometry>
+        <sphere radius="${head_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="${robot_color}"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="${head_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.003" iyz="0" izz="0.003"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="${robot_prefix}_head_link">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <joint name="${robot_prefix}_joint_head" type="fixed">
+    <parent link="${robot_prefix}_body_link"/>
+    <child link="${robot_prefix}_head_link"/>
+    <origin xyz="0 0 ${body_height/2 + head_radius}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- ========== 4. 左臂（可旋转） ========== -->
+  <!-- ========================================================= -->
+  <link name="${robot_prefix}_left_arm">
+    <visual>
+      <geometry>
+        <cylinder radius="${arm_radius}" length="${arm_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <material name="${robot_color}"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${arm_radius}" length="${arm_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="${robot_prefix}_left_arm">
+    <material>Gazebo/Blue</material>
+    <mu1>0.3</mu1>
+    <mu2>0.3</mu2>
+  </gazebo>
+
+  <joint name="${robot_prefix}_joint_left_arm" type="revolute">
+    <parent link="${robot_prefix}_body_link"/>
+    <child link="${robot_prefix}_left_arm"/>
+    <origin xyz="${body_radius + arm_length/2} 0 ${body_height/4}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
+    <!-- Gazebo 关节属性 -->
+    <dynamics damping="0.1" friction="0.05"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- ========== 5. 右臂 ========== -->
+  <!-- ========================================================= -->
+  <link name="${robot_prefix}_right_arm">
+    <visual>
+      <geometry>
+        <cylinder radius="${arm_radius}" length="${arm_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <material name="${robot_color}"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${arm_radius}" length="${arm_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="${robot_prefix}_right_arm">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <joint name="${robot_prefix}_joint_right_arm" type="revolute">
+    <parent link="${robot_prefix}_body_link"/>
+    <child link="${robot_prefix}_right_arm"/>
+    <origin xyz="-${body_radius + arm_length/2} 0 ${body_height/4}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
+    <dynamics damping="0.1" friction="0.05"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- ========== 6. Gazebo 全局配置 ========== -->
+  <!-- ========================================================= -->
+  
+  <!-- 机器人根标签：设置重力、启用物理引擎等 -->
+  <gazebo>
+    <static>false</static>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+      <controlPeriod>0.001</controlPeriod>
+    </plugin>
+  </gazebo>
+
+</robot>

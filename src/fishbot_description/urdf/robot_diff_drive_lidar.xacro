@@ -1,0 +1,200 @@
+<?xml version="1.0"?>
+<robot name="diff_drive_robot_lidar" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ========== 包含激光雷达插件 ========== -->
+  <xacro:include filename="sensors/lidar_plugin.xacro"/>
+
+  <!-- ========== 机器人参数 ========== -->
+  <xacro:property name="pi" value="3.14159265358979"/>
+  <xacro:property name="wheel_radius" value="0.06"/>
+  <xacro:property name="wheel_length" value="0.04"/>
+  <xacro:property name="wheel_mass" value="0.1"/>
+  <xacro:property name="wheel_separation" value="0.2"/>
+  <xacro:property name="caster_radius" value="0.02"/>
+  <xacro:property name="caster_mass" value="0.05"/>
+  <xacro:property name="body_radius" value="0.2"/>
+  <xacro:property name="body_height" value="0.06"/>
+  <xacro:property name="base_mass" value="1.0"/>
+
+  <!-- ========== 材质定义 ========== -->
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+  <material name="dark_gray">
+    <color rgba="0.2 0.2 0.2 1"/>
+  </material>
+  <material name="gray">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+
+  <!-- ========== 惯性宏 ========== -->
+  <xacro:macro name="cylinder_inertia" params="mass radius length">
+    <inertia ixx="${(1/12) * mass * (3*radius*radius + length*length)}"
+             ixy="0" ixz="0"
+             iyy="${(1/12) * mass * (3*radius*radius + length*length)}"
+             iyz="0"
+             izz="${(1/2) * mass * radius*radius}"/>
+  </xacro:macro>
+
+  <!-- ========== 基座 ========== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${body_radius}" length="${body_height}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${body_radius}" length="${body_height}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="${base_mass}"/>
+      <xacro:cylinder_inertia mass="${base_mass}" radius="${body_radius}" length="${body_height}"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 左轮 ========== -->
+  <link name="left_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <material name="dark_gray"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <xacro:cylinder_inertia mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_length}"/>
+    </inertial>
+  </link>
+
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="0 ${wheel_separation/2} ${-wheel_radius/2}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+
+  <!-- ========== 右轮 ========== -->
+  <link name="right_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <material name="dark_gray"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <xacro:cylinder_inertia mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_length}"/>
+    </inertial>
+  </link>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="0 ${-wheel_separation/2} ${-wheel_radius/2}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+
+  <!-- ========== 万向轮 ========== -->
+  <link name="front_caster_link">
+    <visual>
+      <geometry>
+        <sphere radius="${caster_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="${caster_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="${caster_mass}"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="front_caster_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="front_caster_link"/>
+    <origin xyz="${body_radius * 0.6} 0 ${-caster_radius - body_height/2}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="back_caster_link">
+    <visual>
+      <geometry>
+        <sphere radius="${caster_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="${caster_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="${caster_mass}"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="back_caster_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="back_caster_link"/>
+    <origin xyz="-${body_radius * 0.6} 0 ${-caster_radius - body_height/2}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- ========== 激光雷达 ========== -->
+  <xacro:add_lidar prefix="diff_robot"
+                   x="0" y="0" z="0.12"
+                   min_range="0.1" max_range="8.0"
+                   angle_min="-3.14159" angle_max="3.14159"
+                   samples="360"/>
+
+  <!-- ========== Gazebo 差速驱动插件 ========== -->
+  <gazebo>
+    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+      <robotNamespace>/</robotNamespace>
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${wheel_separation}</wheel_separation>
+      <wheel_diameter>${wheel_radius * 2}</wheel_diameter>
+      <command_topic>cmd_vel</command_topic>
+      <odometry_topic>odom</odometry_topic>
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <publish_odom>true</publish_odom>
+      <publish_wheel_tf>true</publish_wheel_tf>
+      <publish_wheel_joint_state>true</publish_wheel_joint_state>
+      <update_rate>50.0</update_rate>
+      <always_on>true</always_on>
+    </plugin>
+  </gazebo>
+
+</robot>
