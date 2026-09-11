@@ -18,7 +18,7 @@ def generate_launch_description():
         launch.substitutions.Command(
             ['xacro ', launch.substitutions.LaunchConfiguration('model')]),
         value_type=str)
-  	
+
     robot_state_publisher_node = launch_ros.actions.Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -29,8 +29,8 @@ def generate_launch_description():
     launch_gazebo = launch.actions.IncludeLaunchDescription(
         PythonLaunchDescriptionSource([get_package_share_directory(
             'gazebo_ros'), '/launch', '/gazebo.launch.py']),
-      	# 传递参数
-        launch_arguments=[('world', default_world_path),('verbose','true')]
+        # 传递参数
+        launch_arguments=[('world', default_world_path), ('verbose', 'true')]
     )
     # 请求 Gazebo 加载机器人
     spawn_entity_node = launch_ros.actions.Node(
@@ -38,38 +38,46 @@ def generate_launch_description():
         executable='spawn_entity.py',
         arguments=['-topic', '/robot_description',
                    '-entity', robot_name_in_model, ])
-    
+
     # 加载并激活 fishbot_joint_state_broadcaster 控制器
-    load_joint_state_controller = launch.actions.ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-            'fishbot_joint_state_broadcaster'],
-        output='screen'
+    # 使用 controller_manager 官方 spawner：它会自动等待 controller_manager
+    # 服务就绪（默认/指定超时），幂等地完成 load+configure+activate，
+    # 避免裸 `ros2 control load_controller` 在 gazebo_ros2_control 刚创建
+    # controller_manager 时发生请求竞态（重复加载 / 报错退出 / 控制器未激活）。
+    load_joint_state_controller = launch_ros.actions.Node(
+        package='controller_manager',
+        executable='spawner',
+        output='screen',
+        arguments=[
+            'fishbot_joint_state_broadcaster',
+            '--controller-manager-timeout', '60.0',
+        ],
     )
 
-    # 加载并激活 fishbot_effort_controller 控制器
-    load_fishbot_effort_controller = launch.actions.ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active','fishbot_effort_controller'], 
-        output='screen')
-    
-    load_fishbot_diff_drive_controller = launch.actions.ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active','fishbot_diff_drive_controller'], 
-        output='screen')
-    
+    # 加载并激活 fishbot_diff_drive_controller 控制器（订阅 /cmd_vel 的关键控制器）
+    load_fishbot_diff_drive_controller = launch_ros.actions.Node(
+        package='controller_manager',
+        executable='spawner',
+        output='screen',
+        arguments=[
+            'fishbot_diff_drive_controller',
+            '--controller-manager-timeout', '60.0',
+        ],
+    )
+
     return launch.LaunchDescription([
         action_declare_arg_mode_path,
         robot_state_publisher_node,
         launch_gazebo,
         spawn_entity_node,
-        # 事件动作，当加载机器人结束后执行    
+        # 模型生成完成后再启动控制器 spawner；
+        # spawner 自身会等待 controller_manager 就绪，两个控制器可并行激活
         launch.actions.RegisterEventHandler(
             event_handler=launch.event_handlers.OnProcessExit(
                 target_action=spawn_entity_node,
-                on_exit=[load_joint_state_controller],)
-            ),
-        # 事件动作，load_fishbot_diff_drive_controller
-        launch.actions.RegisterEventHandler(
-        event_handler=launch.event_handlers.OnProcessExit(
-            target_action=load_joint_state_controller,
-            on_exit=[load_fishbot_diff_drive_controller],)
+                on_exit=[
+                    load_joint_state_controller,
+                    load_fishbot_diff_drive_controller,
+                ],)
             ),
     ])
