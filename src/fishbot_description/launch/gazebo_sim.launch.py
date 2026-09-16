@@ -37,13 +37,8 @@ def generate_launch_description():
         package='gazebo_ros',
         executable='spawn_entity.py',
         arguments=['-topic', '/robot_description',
-                   '-entity', robot_name_in_model, ])
-
-    # 加载并激活 fishbot_joint_state_broadcaster 控制器
-    # 使用 controller_manager 官方 spawner：它会自动等待 controller_manager
-    # 服务就绪（默认/指定超时），幂等地完成 load+configure+activate，
-    # 避免裸 `ros2 control load_controller` 在 gazebo_ros2_control 刚创建
-    # controller_manager 时发生请求竞态（重复加载 / 报错退出 / 控制器未激活）。
+                   '-entity', robot_name_in_model, ]
+        
     load_joint_state_controller = launch_ros.actions.Node(
         package='controller_manager',
         executable='spawner',
@@ -70,8 +65,7 @@ def generate_launch_description():
         robot_state_publisher_node,
         launch_gazebo,
         spawn_entity_node,
-        # 模型生成完成后再启动控制器 spawner；
-        # spawner 自身会等待 controller_manager 就绪，两个控制器可并行激活
+
         launch.actions.RegisterEventHandler(
             event_handler=launch.event_handlers.OnProcessExit(
                 target_action=spawn_entity_node,
